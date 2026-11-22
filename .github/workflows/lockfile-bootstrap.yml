@@ -23,15 +23,6 @@ jobs:
         run: npm install --package-lock-only --ignore-scripts --no-audit
       - name: Validate lockfile metadata
         run: node -e "const p=require('./package-lock.json'); if(p.lockfileVersion!==3 || !p.packages['']?.workspaces) process.exit(1); console.log('npm workspace lockfile generated:', p.lockfileVersion)"
-      - name: Switch CI to deterministic installation
-        run: |
-          node --input-type=commonjs <<'NODE'
-          const fs = require("node:fs");
-          const path = ".github/workflows/ci.yml";
-          const source = fs.readFileSync(path, "utf8");
-          if (!source.includes("run: npm install")) throw new Error("Expected npm install step was not found");
-          fs.writeFileSync(path, source.replace("run: npm install", "run: npm ci"));
-          NODE
       - name: Verify clean install and quality gates
         run: |
           npm ci
@@ -40,11 +31,10 @@ jobs:
           npm run lint
           npm test
           npm run build
-      - name: Commit generated lockfile and CI update
+      - name: Commit generated lockfile
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm .github/workflows/lockfile-bootstrap.yml
-          git add package-lock.json .github/workflows/ci.yml .github/workflows/lockfile-bootstrap.yml
-          git commit -m "chore: commit npm workspace lockfile and use npm ci"
+          git add package-lock.json
+          git commit -m "chore: commit reproducible npm workspace lockfile"
           git push origin HEAD:feat/milestone-1-enterprise-foundation
