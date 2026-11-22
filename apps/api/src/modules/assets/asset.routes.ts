@@ -55,14 +55,14 @@ export function createAssetRouter(repository: AssetRepository = new AssetReposit
 
   router.patch("/:id", requirePermission("assets:write"), asyncRoute(async (request, response) => {
     const tenantId = requestedTenantId(request.query.tenantId);
-    const asset = await repository.update(request.auth!, request.params.id!, request.body, tenantId);
+    const asset = await repository.update(request.auth!, assetId(request.params.id), request.body, tenantId);
     if (!asset) throw new HttpError(404, "ASSET_NOT_FOUND", "The requested asset was not found.");
     response.status(200).json({ data: asset });
   }));
 
   router.delete("/:id", requirePermission("assets:write"), asyncRoute(async (request, response) => {
     const tenantId = requestedTenantId(request.query.tenantId);
-    const deleted = await repository.delete(request.auth!, request.params.id!, tenantId);
+    const deleted = await repository.delete(request.auth!, assetId(request.params.id), tenantId);
     if (!deleted) throw new HttpError(404, "ASSET_NOT_FOUND", "The requested asset was not found.");
     response.status(204).end();
   }));
