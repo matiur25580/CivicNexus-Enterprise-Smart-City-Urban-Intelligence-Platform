@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for contributing to CivicNexus. The repository is being delivered incrementally; keep changes focused and distinguish working functionality from planned capabilities.
+Thank you for contributing to CivicNexus. The repository is delivered incrementally; keep changes focused and distinguish working functionality from planned capabilities.
 
 ## Before starting
 - Read the README, architecture documentation, and SECURITY.md.

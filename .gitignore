@@ -8,6 +8,7 @@ build/
 coverage/
 .turbo/
 .vite/
+*.tsbuildinfo
 
 # Local environment and secrets
 .env

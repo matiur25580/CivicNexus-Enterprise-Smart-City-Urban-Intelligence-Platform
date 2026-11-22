@@ -1,0 +1,120 @@
+{
+  "realm": "civicnexus",
+  "enabled": true,
+  "displayName": "CivicNexus Development",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "platform_admin",
+        "description": "Platform-wide administration"
+      },
+      {
+        "name": "tenant_admin",
+        "description": "Tenant administration"
+      },
+      {
+        "name": "city_operator",
+        "description": "City operations"
+      },
+      {
+        "name": "analyst",
+        "description": "Read-only analytics"
+      },
+      {
+        "name": "emergency_responder",
+        "description": "Emergency response operations"
+      },
+      {
+        "name": "citizen",
+        "description": "Citizen self-service"
+      }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "civicnexus-api-audience",
+      "description": "Add CivicNexus API to access-token audience",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "CivicNexus API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "civicnexus-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "civicnexus-tenant-context",
+      "description": "Expose the administrator-managed tenant selection context in access tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "CivicNexus tenant context",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false",
+            "multivalued": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "civicnexus-web",
+      "name": "CivicNexus Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email",
+        "civicnexus-api-audience",
+        "civicnexus-tenant-context"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    }
+  ]
+}
