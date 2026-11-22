@@ -4,6 +4,7 @@ import { HttpError } from "../../lib/http-error.js";
 import { requireAuthenticated, requirePermission } from "../identity/authorization.js";
 import { assertJurisdictionAssignment, buildJurisdictionScopedFilter } from "../identity/scoped-query.js";
 import { Incident } from "./incident.model.js";
+import { analyzeIncidentHotspots } from "./hotspot-analysis.js";
 
 const createSchema = z.object({
   jurisdictionId: z.string().trim().min(1).max(128),
@@ -87,4 +88,57 @@ router.patch("/:incidentId", requirePermission("incidents:write"), asyncRoute(as
   await incident.save();
   response.status(200).json({ data: incident, meta: { priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
 }));
+router.get("/hotspots", requirePermission("analytics:read"), asyncRoute(async (request, response) => {
+  const querySchema = z.object({
+    tenantId: z.string().trim().min(1).max(128).optional(),
+    jurisdictionId: z.string().trim().min(1).max(128).optional(),
+    longitude: z.coerce.number().min(-180).max(180),
+    latitude: z.coerce.number().min(-90).max(90),
+    radiusMeters: z.coerce.number().int().min(100).max(50_000).default(5_000),
+    cellSizeMeters: z.coerce.number().int().min(100).max(5_000).default(500),
+    windowHours: z.coerce.number().int().min(1).max(720).default(168),
+    limit: z.coerce.number().int().min(1).max(50).default(20)
+  });
+  const parsed = querySchema.safeParse(request.query);
+  if (!parsed.success) throw new HttpError(400, "INVALID_HOTSPOT_FILTER", "Hotspot coordinates or filters are invalid.");
+  const { tenantId, jurisdictionId, longitude, latitude, radiusMeters, cellSizeMeters, windowHours, limit } = parsed.data;
+  const scopedFilter = buildJurisdictionScopedFilter(request.auth!, {
+    ...(jurisdictionId ? { jurisdictionId } : {}),
+    status: { $nin: ["resolved", "closed"] },
+    createdAt: { $gte: new Date(Date.now() - windowHours * 3_600_000) }
+  }, tenantId);
+  const records = await Incident.aggregate<{
+    location: { type: "Point"; coordinates: [number, number] };
+    severity: "low" | "medium" | "high" | "critical";
+    impactCount: number;
+    safetyRisk: boolean;
+    category: string;
+  }>([
+    {
+      $geoNear: {
+        near: { type: "Point", coordinates: [longitude, latitude] },
+        key: "location",
+        distanceField: "distanceMeters",
+        maxDistance: radiusMeters,
+        spherical: true,
+        query: scopedFilter
+      }
+    },
+    { $project: { _id: 0, location: 1, severity: 1, impactCount: 1, safetyRisk: 1, category: 1 } },
+    { $limit: 5001 }
+  ]).exec();
+  const truncated = records.length > 5000;
+  const hotspots = analyzeIncidentHotspots(records.slice(0, 5000), cellSizeMeters, limit);
+  response.status(200).json({
+    data: hotspots,
+    meta: {
+      center: { type: "Point", coordinates: [longitude, latitude] },
+      radiusMeters, cellSizeMeters, windowHours,
+      incidentsAnalyzed: Math.min(records.length, 5000),
+      truncated,
+      ordering: "risk_score_desc"
+    }
+  });
+}));
+
 export function createIncidentRouter() { return router; }
