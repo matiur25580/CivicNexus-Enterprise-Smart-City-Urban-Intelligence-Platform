@@ -51,14 +51,26 @@ export function analyzeIncidentHotspots(
     const lonStep = cellSizeMeters / (111_320 * Math.max(0.1, Math.cos(centerLatitude * Math.PI / 180)));
     const centerLongitude = (cell.lonIndex + 0.5) * lonStep - 180;
     const categories = Object.fromEntries([...cell.categories.entries()].sort((a, b) => b[1] - a[1]));
+    const dominantCategory = Object.entries(categories)[0]?.[0] ?? "other";
     const priority = cell.riskScore >= 30 || cell.severityCounts.critical > 0 ? "critical"
       : cell.riskScore >= 15 || cell.severityCounts.high > 0 ? "high"
       : cell.riskScore >= 6 ? "medium" : "low";
+    const responseRecommendation: Record<string, string> = {
+      road_damage: "Prioritize a road maintenance inspection and traffic-safety controls",
+      water: "Dispatch a water-network crew to assess leaks, flooding, and service disruption",
+      power: "Prioritize utility isolation and electrical safety assessment",
+      waste: "Schedule a sanitation crew and assess public-health exposure",
+      public_safety: "Escalate to the public-safety response coordinator",
+      transport: "Coordinate transport operations and temporary route management",
+      other: "Review the cluster and assign the appropriate municipal response team"
+    };
     return {
       center: { type: "Point" as const, coordinates: [centerLongitude, centerLatitude] as [number, number] },
       incidentCount: cell.count,
       riskScore: cell.riskScore,
       priority,
+      dominantCategory,
+      responseRecommendation: responseRecommendation[dominantCategory] ?? responseRecommendation.other,
       impactCount: cell.impactCount,
       safetyRiskCount: cell.safetyRiskCount,
       severityCounts: cell.severityCounts,
