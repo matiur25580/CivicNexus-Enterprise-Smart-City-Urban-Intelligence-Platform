@@ -2,8 +2,6 @@ import type { AuthenticatedPrincipal } from "@civicnexus/contracts";
 import type { FilterQuery } from "mongoose";
 import { HttpError } from "../../lib/http-error.js";
 
-type ScopedDocument = Record<string, unknown>;
-
 export function resolveTenantScope(principal: AuthenticatedPrincipal, requestedTenantId?: string): string {
   const tenantId = requestedTenantId ?? principal.tenantId;
   if (!tenantId || tenantId.trim().length === 0) {
@@ -31,7 +29,7 @@ export function assertJurisdictionAssignment(
 }
 
 /** Adds a mandatory tenant predicate; caller filters cannot overwrite the security boundary. */
-export function buildTenantScopedFilter<T extends ScopedDocument>(
+export function buildTenantScopedFilter<T>(
   principal: AuthenticatedPrincipal,
   filter: FilterQuery<T> = {},
   requestedTenantId?: string,
@@ -41,7 +39,7 @@ export function buildTenantScopedFilter<T extends ScopedDocument>(
 }
 
 /** Adds tenant and jurisdiction predicates. Empty assignments fail closed. */
-export function buildJurisdictionScopedFilter<T extends ScopedDocument>(
+export function buildJurisdictionScopedFilter<T>(
   principal: AuthenticatedPrincipal,
   filter: FilterQuery<T> = {},
   requestedTenantId?: string,
