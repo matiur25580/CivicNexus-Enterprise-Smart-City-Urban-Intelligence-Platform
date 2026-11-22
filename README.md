@@ -155,3 +155,24 @@ CivicNexus is an actively developed portfolio project, not a certified public-sa
 - [Contributing guide](CONTRIBUTING.md) — engineering standards and pull request expectations.
 
 These documents describe intended safeguards and contribution practices; they do not imply that planned product controls are already implemented or independently verified.
+
+
+## Industry alignment and next capability increments
+
+CivicNexus is positioned around interoperable, explainable urban operations—not an autonomous emergency dispatch system. The next high-value increments are:
+
+1. **Standards-based sensor ingestion:** adapter boundaries for OGC SensorThings API 2.0 and MQTT, with device identity, timestamps, schema validation and telemetry freshness.
+2. **Geospatial digital-twin foundations:** versioned asset geometry, event overlays, spatial lineage and scenario snapshots before any predictive claims.
+3. **Resilience intelligence:** explainable hotspot and service-risk indicators with confidence, data freshness and human review.
+4. **Privacy-aware civic analytics:** aggregation, retention controls and role-scoped access for sensitive location data.
+5. **Operational readiness:** OpenTelemetry traces, SLOs, dead-letter handling, accessibility checks and disaster-recovery exercises.
+
+Reference: [OGC SensorThings API 2.0](https://docs.ogc.org/is/23-019/23-019.html) defines an open geospatial IoT data model and REST API with HTTP/MQTT bindings. This is an integration direction, not a conformance claim.
+
+## Interview-ready engineering narrative
+
+- Explain how tenant and jurisdiction filters are enforced below the UI.
+- Demonstrate why GeoJSON/WGS84 validation and spatial indexes matter.
+- Show how a hotspot score can be explained and audited rather than treated as an opaque AI verdict.
+- Distinguish implemented incident workflows from planned live sensor and city-system integrations.
+- Describe how stale or incomplete telemetry should affect confidence and operator decisions.
