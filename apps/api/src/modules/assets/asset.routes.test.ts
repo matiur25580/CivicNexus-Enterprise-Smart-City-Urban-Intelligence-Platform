@@ -51,6 +51,7 @@ async function startServer(principal?: AuthenticatedPrincipal) {
   });
   app.use("/api/v1/assets", createAssetRouter(new AssetRepository(makePersistence())));
   app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    void _next;
     const status = error instanceof HttpError ? error.statusCode : 500;
     response.status(status).json({ error: { code: error instanceof HttpError ? error.code : "TEST_ERROR" } });
   });
@@ -117,6 +118,7 @@ describe("asset HTTP routes", () => {
     app.use((request, _response, next) => { request.auth = operator; next(); });
     app.use("/api/v1/assets", createAssetRouter(new AssetRepository(persistence)));
     app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+      void _next;
       response.status(error instanceof HttpError ? error.statusCode : 500)
         .json({ error: { code: error instanceof HttpError ? error.code : "TEST_ERROR" } });
     });
