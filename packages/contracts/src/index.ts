@@ -8,6 +8,38 @@ export interface ApiError {
   error: { code: string; message: string; requestId?: string };
 }
 
+/** Identity context created only after a trusted authentication mechanism verifies a credential. */
+export type CivicRole =
+  | "platform_admin"
+  | "tenant_admin"
+  | "city_operator"
+  | "analyst"
+  | "emergency_responder"
+  | "citizen";
+
+export type CivicPermission =
+  | "platform:manage"
+  | "tenant:manage"
+  | "users:manage"
+  | "jurisdictions:read"
+  | "assets:read"
+  | "assets:write"
+  | "incidents:read"
+  | "incidents:write"
+  | "work_orders:read"
+  | "work_orders:write"
+  | "analytics:read"
+  | "citizen_requests:create"
+  | "citizen_requests:read_own";
+
+export interface AuthenticatedPrincipal {
+  userId: string;
+  tenantId: string;
+  role: CivicRole;
+  /** Jurisdictions explicitly assigned to the principal within their tenant. */
+  jurisdictionIds: string[];
+}
+
 /** GeoJSON positions use WGS84 longitude, latitude order, with optional altitude. */
 export type GeoJsonPosition = [longitude: number, latitude: number, ...altitude: number[]];
 
