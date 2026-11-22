@@ -7,5 +7,4 @@ export const logger = pino({
     paths: ["req.headers.authorization", "req.headers.cookie", "*.password", "*.token"],
     censor: "[REDACTED]",
   },
-  ...(env.NODE_ENV === "development" ? { transport: { target: "pino-pretty" } } : {}),
 });
