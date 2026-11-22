@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createServer, type Server } from "node:http";
 import { generateKeyPairSync, sign } from "node:crypto";
 import type { AddressInfo } from "node:net";
+import type { clearOidcJwksCache as ClearOidcJwksCache, verifyAccessToken as VerifyAccessToken } from "./oidc.js";
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const jwk = publicKey.export({ format: "jwk" });
@@ -13,8 +14,8 @@ const originalEnv = {
 };
 let server: Server;
 let issuer: string;
-let verifyAccessToken: typeof import("./oidc.js").verifyAccessToken;
-let clearOidcJwksCache: typeof import("./oidc.js").clearOidcJwksCache;
+let verifyAccessToken: typeof VerifyAccessToken;
+let clearOidcJwksCache: typeof ClearOidcJwksCache;
 
 function token(overrides: Record<string, unknown> = {}, kid = keyId): string {
   const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid })).toString("base64url");
