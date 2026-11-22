@@ -13,7 +13,7 @@
   "dependencies": {
     "@civicnexus/contracts": "0.1.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
+    "dotenv": "^18.0.10",
     "express": "^5.0.1",
     "helmet": "^8.0.0",
     "mongoose": "^8.9.3",
