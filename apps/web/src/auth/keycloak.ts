@@ -6,7 +6,7 @@ const clientId = import.meta.env.VITE_OIDC_CLIENT_ID;
 
 export const oidcConfigured = Boolean(url && realm && clientId);
 
-export const keycloak = oidcConfigured
+export const keycloak: Keycloak | null = url && realm && clientId
   ? new Keycloak({ url, realm, clientId })
   : null;
 

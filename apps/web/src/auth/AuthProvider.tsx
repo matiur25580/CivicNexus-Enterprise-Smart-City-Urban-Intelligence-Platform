@@ -7,8 +7,8 @@ type AuthState = {
   configured: boolean;
   ready: boolean;
   authenticated: boolean;
-  profile?: KeycloakTokenParsed;
-  error?: string;
+  profile: KeycloakTokenParsed | undefined;
+  error: string | undefined;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   accessToken: () => Promise<string | undefined>;
@@ -23,13 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (!keycloak) return;
+    const client = keycloak;
+    if (!client) return;
     let active = true;
     void initializeIdentity()
       .then((signedIn) => {
         if (!active) return;
         setAuthenticated(signedIn);
-        setProfile(keycloak.tokenParsed);
+        setProfile(client.tokenParsed);
         setReady(true);
       })
       .catch(() => {
