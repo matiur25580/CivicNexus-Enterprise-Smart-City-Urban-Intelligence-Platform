@@ -5,6 +5,7 @@ import { requireAuthenticated, requirePermission } from "../identity/authorizati
 import { assertJurisdictionAssignment, buildJurisdictionScopedFilter } from "../identity/scoped-query.js";
 import { Incident } from "./incident.model.js";
 import { analyzeIncidentHotspots } from "./hotspot-analysis.js";
+import { calculateIncidentPriorityScore } from "./priority-scoring.js";
 
 const createSchema = z.object({
   jurisdictionId: z.string().trim().min(1).max(128),
@@ -35,12 +36,6 @@ function asyncRoute(handler: (request: Request, response: Response) => Promise<v
     void handler(request, response).catch(next);
   };
 }
-function priorityScore(severity: string, impactCount: number, safetyRisk: boolean, createdAt: Date): number {
-  const severityPoints: Record<string, number> = { low: 10, medium: 25, high: 45, critical: 60 };
-  const impactPoints = Math.min(20, Math.floor(Math.log10(impactCount + 1) * 10));
-  const ageHours = Math.max(0, (Date.now() - new Date(createdAt).getTime()) / 3_600_000);
-  return Math.min(100, severityPoints[severity]! + impactPoints + (safetyRisk ? 20 : 0) + Math.min(10, Math.floor(ageHours / 24)));
-}
 router.post("/", requirePermission("incidents:write"), asyncRoute(async (request, response) => {
   const parsed = createSchema.safeParse(request.body);
   if (!parsed.success) throw new HttpError(400, "INVALID_INCIDENT_INPUT", "The incident details are invalid.");
@@ -50,7 +45,7 @@ router.post("/", requirePermission("incidents:write"), asyncRoute(async (request
     reportedBy: request.auth!.userId, updatedBy: request.auth!.userId,
     history: [{ status: "reported", note: "Incident reported", changedBy: request.auth!.userId, changedAt: new Date() }]
   });
-  response.status(201).json({ data: incident, meta: { priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
+  response.status(201).json({ data: incident, meta: { priorityScore: calculateIncidentPriorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
 }));
 router.get("/", requirePermission("incidents:read"), asyncRoute(async (request, response) => {
   const parsed = listSchema.safeParse(request.query);
@@ -60,7 +55,7 @@ router.get("/", requirePermission("incidents:read"), asyncRoute(async (request, 
   const records = await Incident.find(filter).sort({ createdAt: -1 }).limit(limit).lean().exec();
   const data = records.map((incident) => ({
     ...incident,
-    priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt)
+    priorityScore: calculateIncidentPriorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt)
   })).sort((a, b) => b.priorityScore - a.priorityScore);
   response.status(200).json({ data, meta: { count: data.length, limit, ordering: "priority_score_desc" } });
 }));
@@ -86,7 +81,7 @@ router.patch("/:incidentId", requirePermission("incidents:write"), asyncRoute(as
   }
   incident.updatedBy = request.auth!.userId;
   await incident.save();
-  response.status(200).json({ data: incident, meta: { priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
+  response.status(200).json({ data: incident, meta: { priorityScore: calculateIncidentPriorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
 }));
 router.get("/hotspots", requirePermission("incidents:read"), asyncRoute(async (request, response) => {
   const querySchema = z.object({
