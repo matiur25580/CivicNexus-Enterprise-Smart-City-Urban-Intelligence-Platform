@@ -22,31 +22,6 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
-      - name: Dependency audit diagnostics
-        continue-on-error: true
-        shell: bash
-        run: |
-          npm audit --json > "$RUNNER_TEMP/npm-audit.json" || true
-          node --input-type=commonjs - "$RUNNER_TEMP/npm-audit.json" <<'NODE'
-          const fs = require("node:fs");
-          const audit = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-          const metadata = audit.metadata?.vulnerabilities ?? {};
-          console.log("npm audit totals:", JSON.stringify(metadata));
-          for (const [name, item] of Object.entries(audit.vulnerabilities ?? {})) {
-            const advisories = item.via
-              .filter((entry) => typeof entry === "object")
-              .map((entry) => ({ title: entry.title, url: entry.url, range: entry.range }));
-            console.log(JSON.stringify({
-              package: name,
-              severity: item.severity,
-              direct: item.isDirect,
-              affectedRange: item.range,
-              nodes: item.nodes,
-              fixAvailable: item.fixAvailable,
-              advisories,
-            }));
-          }
-          NODE
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
