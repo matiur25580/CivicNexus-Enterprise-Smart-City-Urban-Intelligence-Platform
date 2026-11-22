@@ -78,7 +78,8 @@ router.patch("/:incidentId", requirePermission("incidents:write"), asyncRoute(as
     incident.status = parsed.data.status;
     incident.history.push({ status: parsed.data.status, note: parsed.data.note ?? "", changedBy: request.auth!.userId, changedAt: new Date() });
   }
-  if (parsed.data.assignedTeam !== undefined) incident.assignedTeam = parsed.data.assignedTeam ?? undefined;
+  if (parsed.data.assignedTeam === null) incident.set("assignedTeam", undefined);
+  else if (parsed.data.assignedTeam !== undefined) incident.assignedTeam = parsed.data.assignedTeam;
   incident.updatedBy = request.auth!.userId;
   await incident.save();
   response.status(200).json({ data: incident, meta: { priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
