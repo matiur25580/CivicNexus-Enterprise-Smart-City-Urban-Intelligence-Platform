@@ -3,7 +3,6 @@ on:
   push:
     branches: [main, "feat/**"]
   pull_request:
-    branches: [main]
 permissions:
   contents: read
 concurrency:
@@ -13,6 +12,7 @@ jobs:
   quality:
     name: Typecheck, lint, test and build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
