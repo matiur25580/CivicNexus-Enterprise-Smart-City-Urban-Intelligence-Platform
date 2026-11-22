@@ -10,12 +10,23 @@ const severityWeight: Record<HotspotIncident["severity"], number> = {
   low: 1, medium: 2, high: 4, critical: 7
 };
 
+function normalizeLongitude(longitude: number): number {
+  return ((longitude + 180) % 360 + 360) % 360 - 180;
+}
+
 /** Deterministic latitude-aware grid aggregation; returns aggregate locations, never incident records. */
 export function analyzeIncidentHotspots(
   incidents: HotspotIncident[],
   cellSizeMeters: number,
   limit: number
 ) {
+  if (!Number.isInteger(cellSizeMeters) || cellSizeMeters < 100 || cellSizeMeters > 5_000) {
+    throw new RangeError("cellSizeMeters must be an integer between 100 and 5000.");
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+    throw new RangeError("limit must be an integer between 1 and 50.");
+  }
+
   const cells = new Map<string, {
     latIndex: number; lonIndex: number; count: number; riskScore: number;
     impactCount: number; safetyRiskCount: number; categories: Map<string, number>;
@@ -26,7 +37,7 @@ export function analyzeIncidentHotspots(
     const latStep = cellSizeMeters / 111_320;
     const lonStep = cellSizeMeters / (111_320 * Math.max(0.1, Math.cos(latitude * Math.PI / 180)));
     const latIndex = Math.floor((latitude + 90) / latStep);
-    const lonIndex = Math.floor((longitude + 180) / lonStep);
+    const lonIndex = Math.floor((normalizeLongitude(longitude) + 180) / lonStep);
     const key = `${latIndex}:${lonIndex}`;
     let cell = cells.get(key);
     if (!cell) {
@@ -47,10 +58,10 @@ export function analyzeIncidentHotspots(
   }
   const hotspots = [...cells.values()].map(cell => {
     const latStep = cellSizeMeters / 111_320;
-    const centerLatitude = (cell.latIndex + 0.5) * latStep - 90;
+    const centerLatitude = Math.max(-90, Math.min(90, (cell.latIndex + 0.5) * latStep - 90));
     const lonStep = cellSizeMeters / (111_320 * Math.max(0.1, Math.cos(centerLatitude * Math.PI / 180)));
-    const centerLongitude = (cell.lonIndex + 0.5) * lonStep - 180;
-    const categories = Object.fromEntries([...cell.categories.entries()].sort((a, b) => b[1] - a[1]));
+    const centerLongitude = normalizeLongitude((cell.lonIndex + 0.5) * lonStep - 180);
+    const categories = Object.fromEntries([...cell.categories.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])));
     const dominantCategory = Object.entries(categories)[0]?.[0] ?? "other";
     const priority = cell.riskScore >= 30 || cell.severityCounts.critical > 0 ? "critical"
       : cell.riskScore >= 15 || cell.severityCounts.high > 0 ? "high"
@@ -76,6 +87,11 @@ export function analyzeIncidentHotspots(
       severityCounts: cell.severityCounts,
       categories
     };
-  }).sort((a, b) => b.riskScore - a.riskScore || b.incidentCount - a.incidentCount).slice(0, limit);
+  }).sort((a, b) =>
+    b.riskScore - a.riskScore
+    || b.incidentCount - a.incidentCount
+    || a.center.coordinates[1] - b.center.coordinates[1]
+    || a.center.coordinates[0] - b.center.coordinates[0]
+  ).slice(0, limit);
   return hotspots;
 }
