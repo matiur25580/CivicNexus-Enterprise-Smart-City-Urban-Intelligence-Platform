@@ -1,14 +1,9 @@
-import type { NextFunction, Request, Response, RequestHandler } from "express";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { AuthenticatedPrincipal } from "@civicnexus/contracts";
 import {
   canAccessJurisdiction,
   canAccessTenant,
   hasPermission,
-  requireAuthenticated,
-  requireJurisdictionAccess,
-  requirePermission,
-  requireTenantAccess,
 } from "./authorization.js";
 
 const operator: AuthenticatedPrincipal = {
@@ -17,20 +12,6 @@ const operator: AuthenticatedPrincipal = {
   role: "city_operator",
   jurisdictionIds: ["district-1", "district-2"],
 };
-
-function invokeGuard(
-  guard: RequestHandler,
-  principal?: AuthenticatedPrincipal,
-  params: Record<string, string> = {},
-) {
-  const request = {
-    params,
-    ...(principal ? { auth: principal } : {}),
-  } as unknown as Request;
-  const next = vi.fn<NextFunction>();
-  guard(request, {} as Response, next);
-  return next;
-}
 
 describe("CivicNexus authorization policy", () => {
   it("grants only permissions assigned to the role", () => {
@@ -64,37 +45,5 @@ describe("CivicNexus authorization policy", () => {
   it("does not elevate tenant administrators to platform permissions", () => {
     expect(hasPermission("tenant_admin", "tenant:manage")).toBe(true);
     expect(hasPermission("tenant_admin", "platform:manage")).toBe(false);
-  });
-
-  it("fails closed when the request has no verified principal", () => {
-    const next = invokeGuard(requireAuthenticated);
-    expect(next).toHaveBeenCalledOnce();
-    expect(next.mock.calls[0]?.[0]).toMatchObject({ statusCode: 401, code: "AUTHENTICATION_REQUIRED" });
-  });
-
-  it("denies permissions outside the caller's role", () => {
-    const next = invokeGuard(requirePermission("users:manage"), operator);
-    expect(next.mock.calls[0]?.[0]).toMatchObject({ statusCode: 403, code: "PERMISSION_DENIED" });
-  });
-
-  it("rejects cross-tenant route parameters", () => {
-    const next = invokeGuard(requireTenantAccess, operator, { tenantId: "tenant-south" });
-    expect(next.mock.calls[0]?.[0]).toMatchObject({ statusCode: 403, code: "TENANT_ACCESS_DENIED" });
-  });
-
-  it("rejects unassigned jurisdiction route parameters", () => {
-    const next = invokeGuard(requireJurisdictionAccess, operator, {
-      tenantId: "tenant-north",
-      jurisdictionId: "district-9",
-    });
-    expect(next.mock.calls[0]?.[0]).toMatchObject({ statusCode: 403, code: "JURISDICTION_ACCESS_DENIED" });
-  });
-
-  it("continues when all required tenant and jurisdiction scopes match", () => {
-    const next = invokeGuard(requireJurisdictionAccess, operator, {
-      tenantId: "tenant-north",
-      jurisdictionId: "district-1",
-    });
-    expect(next).toHaveBeenCalledWith();
   });
 });

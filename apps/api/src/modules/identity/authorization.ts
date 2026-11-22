@@ -76,8 +76,8 @@ export const requireTenantAccess: RequestHandler = (request, _response, next) =>
     return;
   }
   const tenantId = request.params.tenantId;
-  if (!tenantId) {
-    next(new HttpError(400, "TENANT_SCOPE_REQUIRED", "A tenant scope is required."));
+  if (typeof tenantId !== "string" || tenantId.length === 0) {
+    next(new HttpError(400, "TENANT_SCOPE_REQUIRED", "A single tenant scope is required."));
     return;
   }
   if (!canAccessTenant(principal, tenantId)) {
@@ -95,11 +95,16 @@ export const requireJurisdictionAccess: RequestHandler = (request, _response, ne
     return;
   }
   const jurisdictionId = request.params.jurisdictionId;
-  if (!jurisdictionId) {
-    next(new HttpError(400, "JURISDICTION_SCOPE_REQUIRED", "A jurisdiction scope is required."));
+  if (typeof jurisdictionId !== "string" || jurisdictionId.length === 0) {
+    next(new HttpError(400, "JURISDICTION_SCOPE_REQUIRED", "A single jurisdiction scope is required."));
     return;
   }
-  if (!canAccessJurisdiction(principal, jurisdictionId, request.params.tenantId)) {
+  const tenantId = request.params.tenantId;
+  if (tenantId !== undefined && typeof tenantId !== "string") {
+    next(new HttpError(400, "TENANT_SCOPE_INVALID", "A single tenant scope is required."));
+    return;
+  }
+  if (!canAccessJurisdiction(principal, jurisdictionId, tenantId)) {
     next(new HttpError(403, "JURISDICTION_ACCESS_DENIED", "The requested jurisdiction is outside your access scope."));
     return;
   }
