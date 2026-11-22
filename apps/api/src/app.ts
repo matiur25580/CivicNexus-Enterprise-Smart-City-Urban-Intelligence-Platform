@@ -7,6 +7,7 @@ import type { ApiError } from "@civicnexus/contracts";
 import { env } from "./config/env.js";
 import { HttpError } from "./lib/http-error.js";
 import { logger } from "./lib/logger.js";
+import { authenticateOidc } from "./modules/identity/oidc.js";
 import { healthRouter } from "./routes/health.routes.js";
 
 export const app = express();
@@ -30,7 +31,6 @@ const requestContext: RequestHandler = (request, response, next) => {
 };
 
 const errorHandler: ErrorRequestHandler = (error: unknown, _request, response, next) => {
-  // Express identifies error middleware by its four-argument runtime signature.
   void next;
   const requestId = String(response.locals.requestId ?? randomUUID());
   const isMalformedJson = error instanceof SyntaxError && "status" in error && error.status === 400;
@@ -53,6 +53,7 @@ app.use(helmet());
 app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
 app.use(requestContext);
 app.use(express.json({ limit: "1mb" }));
+app.use(authenticateOidc);
 app.get("/api/v1", (_request, response) => {
   response.status(200).json({ name: "CivicNexus API", version: "v1", documentation: "/api/v1/health" });
 });

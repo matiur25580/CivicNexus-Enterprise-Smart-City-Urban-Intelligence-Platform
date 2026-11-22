@@ -1,54 +1,27 @@
-# Identity and access control foundations
+# Identity and access control
 
-## Security boundary
+## Authentication boundary
 
-CivicNexus authorization consumes an `AuthenticatedPrincipal` attached to the Express request by a trusted credential-verification layer. The authorization module does not parse caller-supplied identity headers, query parameters, or body fields. Until a credential verifier is installed, protected routes must remain inaccessible: the authentication guard returns `401 AUTHENTICATION_REQUIRED` when no verified principal exists.
+CivicNexus accepts OIDC bearer access tokens issued by the configured identity provider. The API verifies the RS256 signature against the configured JWKS endpoint, pins the algorithm, and validates issuer, audience, expiration, and not-before claims before constructing `request.auth`. Unknown key IDs trigger one JWKS refresh to support signing-key rotation. JWKS responses are cached for five minutes.
 
-This milestone establishes authorization policy and a safe integration seam. It does not claim to implement token issuance, password storage, login, refresh-token rotation, or JWT/session verification.
+Configure `OIDC_ISSUER`, `OIDC_JWKS_URI`, and `OIDC_AUDIENCE` together. Production startup requires all three. In development, leave all three unset to keep the API in its existing fail-closed mode: protected routes still return 401 because no principal is attached. Do not set an issuer/audience without a reachable, trusted JWKS endpoint.
 
-## Role-based access control
+Only the six allowlisted CivicNexus roles are recognized. Tokens with zero or multiple recognized roles are rejected. Non-platform principals must carry a non-empty `tenant_id`; jurisdiction assignments are read from the signed `jurisdiction_ids` claim. Platform administrators receive the reserved platform tenant scope. These claims must be populated by trusted identity administration, never by caller-controlled headers or request bodies.
 
-The initial roles are:
+The verifier accepts only RS256 RSA signing keys with a matching `kid`. It does not follow token-provided key URLs, accept symmetric algorithms, or trust unverified JWT contents. Verification failures are returned as a generic 401 and never include token material.
 
-| Role | Intended boundary |
-| --- | --- |
-| `platform_admin` | Platform-wide operational administration |
-| `tenant_admin` | Administration within one tenant |
-| `city_operator` | Operational asset, incident, and work-order workflows |
-| `analyst` | Read-only operational and analytics access |
-| `emergency_responder` | Incident response and related operational workflows |
-| `citizen` | Citizen request submission and own-request access |
+## Keycloak local integration
 
-Permissions are explicit and centrally mapped in `apps/api/src/modules/identity/authorization.ts`. New roles and permissions require policy tests and review. UI visibility is not an authorization boundary; APIs must enforce permissions.
+See [Keycloak local development](./keycloak-local-development.md) for the local realm and browser client setup. Configure the Keycloak API audience mapper so access tokens include `civicnexus-api` in `aud`; configure realm roles and signed tenant/jurisdiction claims using trusted user attributes or server-managed membership. Do not rely on a browser client to assign these claims.
 
-## Tenant and jurisdiction isolation
+## Authorization
 
-- Tenant-scoped routes use `requireTenantAccess` after authentication.
-- Jurisdiction-scoped routes use `requireJurisdictionAccess` after authentication.
-- Non-platform principals can access only their own tenant and jurisdiction IDs explicitly present in the verified principal.
-- A tenant administrator is not a platform administrator and cannot cross tenant boundaries.
-- Data access services must still include tenant and jurisdiction predicates in MongoDB queries; middleware checks are not a substitute for scoped persistence queries.
-- Platform-wide access is an explicit privileged role and should be audited whenever used.
+The role-to-permission matrix remains centralized in `apps/api/src/modules/identity/authorization.ts`. Protected route composition must include `requireAuthenticated`, permission checks, and tenant/jurisdiction guards. API services must independently include tenant and jurisdiction predicates in MongoDB queries. UI visibility is never an authorization boundary.
 
-## Route composition
+## Operational requirements
 
-Protected routes should compose guards in this order:
-
-```ts
-router.get(
-  "/tenants/:tenantId/jurisdictions/:jurisdictionId/assets",
-  requireAuthenticated,
-  requirePermission("assets:read"),
-  requireTenantAccess,
-  requireJurisdictionAccess,
-  listAssets,
-);
-```
-
-## Next security work
-
-1. Add a concrete identity provider or first-party credential verifier with key rotation and strict issuer/audience validation.
-2. Define account lifecycle, MFA, session revocation, and refresh-token rotation policies.
-3. Persist tenant membership and jurisdiction assignments with audit history.
-4. Require tenant and jurisdiction predicates in repository methods and add cross-tenant integration tests.
-5. Add authorization-decision audit events without logging credentials or sensitive request payloads.
+- Use HTTPS for issuer and JWKS endpoints in production.
+- Keep Keycloak in a supported production mode with a managed database, TLS, backups, MFA policy, account lifecycle controls, and externalized secrets.
+- Configure short-lived access tokens and identity-provider session revocation policies.
+- Never log bearer tokens, authorization headers, or raw claims.
+- The current API middleware verifies access tokens but does not implement browser login, logout, refresh-token rotation, persisted CivicNexus memberships, or authorization-decision audit events. Do not expose protected domain routes until trusted tenant/jurisdiction membership and query-level isolation are implemented and tested.

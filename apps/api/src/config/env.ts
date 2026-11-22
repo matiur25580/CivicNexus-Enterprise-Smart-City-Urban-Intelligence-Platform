@@ -8,6 +8,18 @@ const envSchema = z.object({
   WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
   MONGODB_URI: z.string().min(1).default("mongodb://localhost:27017/civicnexus"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  OIDC_ISSUER: z.string().url().optional(),
+  OIDC_JWKS_URI: z.string().url().optional(),
+  OIDC_AUDIENCE: z.string().min(1).optional(),
 });
 
-export const env = envSchema.parse(process.env);
+const parsed = envSchema.parse(process.env);
+const oidcValues = [parsed.OIDC_ISSUER, parsed.OIDC_JWKS_URI, parsed.OIDC_AUDIENCE];
+if (oidcValues.some(Boolean) && !oidcValues.every(Boolean)) {
+  throw new Error("OIDC_ISSUER, OIDC_JWKS_URI, and OIDC_AUDIENCE must be configured together.");
+}
+if (parsed.NODE_ENV === "production" && !oidcValues.every(Boolean)) {
+  throw new Error("OIDC issuer, JWKS URI, and audience are required in production.");
+}
+
+export const env = parsed;
