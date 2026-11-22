@@ -29,7 +29,7 @@ const requestContext: RequestHandler = (request, response, next) => {
   next();
 };
 
-const errorHandler: ErrorRequestHandler = (error: unknown, _request, response, _next) => {
+const errorHandler: ErrorRequestHandler = (error: unknown, _request, response) => {
   const requestId = String(response.locals.requestId ?? randomUUID());
   const isMalformedJson = error instanceof SyntaxError && "status" in error && error.status === 400;
   const normalizedError = isMalformedJson
