@@ -1,24 +1,23 @@
 import { createPublicKey, verify as verifySignature } from "node:crypto";
 import type { JsonWebKey } from "node:crypto";
 import type { RequestHandler } from "express";
-import type { AuthenticatedPrincipal, CivicRole } from "@civicnexus/contracts";
 import { env } from "../../config/env.js";
 import { HttpError } from "../../lib/http-error.js";
+import { resolveMembership } from "./membership.js";
 
 type JwtHeader = { alg?: string; kid?: string; typ?: string };
 type JwtClaims = {
   iss?: unknown; aud?: unknown; exp?: unknown; nbf?: unknown; sub?: unknown;
-  realm_access?: { roles?: unknown };
-  roles?: unknown;
   tenant_id?: unknown;
-  jurisdiction_ids?: unknown;
 };
 type Jwk = JsonWebKey & { kid?: string; use?: string; alg?: string; kty?: string };
 type JwksDocument = { keys?: Jwk[] };
 
-const ALLOWED_ROLES = new Set<CivicRole>([
-  "platform_admin", "tenant_admin", "city_operator", "analyst", "emergency_responder", "citizen",
-]);
+export interface VerifiedIdentity {
+  userId: string;
+  tenantId: string;
+}
+
 const CLOCK_TOLERANCE_SECONDS = 5;
 const JWKS_CACHE_MS = 5 * 60 * 1000;
 let cachedKeys: Jwk[] = [];
@@ -56,31 +55,15 @@ async function loadJwks(force = false): Promise<Jwk[]> {
   return refreshInFlight;
 }
 
-function extractRole(claims: JwtClaims): CivicRole {
-  const realmRoles = claims.realm_access && typeof claims.realm_access === "object"
-    ? claims.realm_access.roles : undefined;
-  const roles = Array.isArray(realmRoles) ? realmRoles : Array.isArray(claims.roles) ? claims.roles : [];
-  const recognized = [...new Set(roles.filter((role): role is CivicRole =>
-    typeof role === "string" && ALLOWED_ROLES.has(role as CivicRole),
-  ))];
-  if (recognized.length !== 1) throw unauthorized();
-  return recognized[0]!;
-}
-
-function buildPrincipal(claims: JwtClaims): AuthenticatedPrincipal {
-  if (typeof claims.sub !== "string" || claims.sub.length === 0 || claims.sub.length > 256) throw unauthorized();
-  const role = extractRole(claims);
-  const tenantId = role === "platform_admin" ? "platform" : claims.tenant_id;
-  if (typeof tenantId !== "string" || tenantId.length === 0 || tenantId.length > 128) throw unauthorized();
-  const jurisdictionIds = claims.jurisdiction_ids ?? [];
-  if (!Array.isArray(jurisdictionIds) ||
-      !jurisdictionIds.every((value) => typeof value === "string" && value.length > 0 && value.length <= 128)) {
+function buildIdentity(claims: JwtClaims): VerifiedIdentity {
+  if (typeof claims.sub !== "string" || claims.sub.length === 0 || claims.sub.length > 256 ||
+      typeof claims.tenant_id !== "string" || claims.tenant_id.length === 0 || claims.tenant_id.length > 128) {
     throw unauthorized();
   }
-  return { userId: claims.sub, tenantId, role, jurisdictionIds };
+  return { userId: claims.sub, tenantId: claims.tenant_id };
 }
 
-export async function verifyAccessToken(token: string): Promise<AuthenticatedPrincipal> {
+export async function verifyAccessToken(token: string): Promise<VerifiedIdentity> {
   if (!env.OIDC_ISSUER || !env.OIDC_AUDIENCE || !env.OIDC_JWKS_URI) throw unauthorized();
   const segments = token.split(".");
   if (segments.length !== 3 || segments.some((part) => part.length === 0)) throw unauthorized();
@@ -130,18 +113,22 @@ export async function verifyAccessToken(token: string): Promise<AuthenticatedPri
       (typeof claims.nbf !== "number" || !Number.isFinite(claims.nbf) || claims.nbf > now + CLOCK_TOLERANCE_SECONDS))
   ) throw unauthorized();
 
-  return buildPrincipal(claims);
+  return buildIdentity(claims);
 }
 
-/** Validates bearer access tokens and attaches only a cryptographically verified principal. */
+/** Verifies the OIDC identity, then hydrates permissions from an active MongoDB membership. */
 export const authenticateOidc: RequestHandler = (request, _response, next) => {
   const authorization = request.header("authorization");
   if (!authorization) { next(); return; }
   const match = /^Bearer ([A-Za-z0-9._~-]+)$/i.exec(authorization);
   if (!match) { next(unauthorized()); return; }
   void verifyAccessToken(match[1]!)
+    .then((identity) => resolveMembership(identity))
     .then((principal) => { request.auth = principal; next(); })
-    .catch(() => next(unauthorized()));
+    .catch((error: unknown) => {
+      if (error instanceof HttpError) { next(error); return; }
+      next(new HttpError(503, "IDENTITY_MEMBERSHIP_UNAVAILABLE", "Identity membership could not be verified."));
+    });
 };
 
 /** Test helper only: clears process-local signing-key cache between isolated tests. */

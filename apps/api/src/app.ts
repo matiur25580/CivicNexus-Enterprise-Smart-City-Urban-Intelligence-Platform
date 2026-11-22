@@ -9,6 +9,7 @@ import { HttpError } from "./lib/http-error.js";
 import { logger } from "./lib/logger.js";
 import { authenticateOidc } from "./modules/identity/oidc.js";
 import { healthRouter } from "./routes/health.routes.js";
+import { identityRouter } from "./routes/identity.routes.js";
 
 export const app = express();
 
@@ -58,6 +59,7 @@ app.get("/api/v1", (_request, response) => {
   response.status(200).json({ name: "CivicNexus API", version: "v1", documentation: "/api/v1/health" });
 });
 app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/identity", identityRouter);
 app.use((_request, _response, next) => {
   next(new HttpError(404, "NOT_FOUND", "The requested resource was not found."));
 });

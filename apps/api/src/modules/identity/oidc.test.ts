@@ -22,8 +22,9 @@ function token(overrides: Record<string, unknown> = {}, kid = keyId): string {
   const claims = Buffer.from(JSON.stringify({
     iss: issuer, aud: "civicnexus-api", sub: "operator-1",
     exp: Math.floor(Date.now() / 1000) + 300,
-    realm_access: { roles: ["city_operator"] },
-    tenant_id: "tenant-north", jurisdiction_ids: ["district-1"],
+    tenant_id: "tenant-north",
+    realm_access: { roles: ["platform_admin"] },
+    jurisdiction_ids: ["attacker-selected-ward"],
     ...overrides,
   })).toString("base64url");
   const input = `${header}.${claims}`;
@@ -58,9 +59,9 @@ describe("OIDC access-token verification", () => {
     clearOidcJwksCache();
   });
 
-  it("verifies a signed token and derives a typed least-privilege principal", async () => {
+  it("verifies identity and deliberately ignores token role and jurisdiction claims", async () => {
     await expect(verifyAccessToken(token())).resolves.toEqual({
-      userId: "operator-1", tenantId: "tenant-north", role: "city_operator", jurisdictionIds: ["district-1"],
+      userId: "operator-1", tenantId: "tenant-north",
     });
   });
 
@@ -80,18 +81,17 @@ describe("OIDC access-token verification", () => {
     await expect(verifyAccessToken(token({ nbf: Math.floor(Date.now() / 1000) + 120 }))).rejects.toMatchObject({ statusCode: 401 });
   });
 
-  it("rejects malformed tokens, unsupported algorithms, unknown keys, and ambiguous roles", async () => {
+  it("rejects malformed tokens, unsupported algorithms, and unknown keys", async () => {
     await expect(verifyAccessToken("not.a.jwt")).rejects.toMatchObject({ statusCode: 401 });
     const parts = token().split(".");
     parts[0] = Buffer.from(JSON.stringify({ alg: "HS256", kid: keyId })).toString("base64url");
     await expect(verifyAccessToken(parts.join("."))).rejects.toMatchObject({ statusCode: 401 });
     await expect(verifyAccessToken(token({}, "unknown-key"))).rejects.toMatchObject({ statusCode: 401 });
-    await expect(verifyAccessToken(token({ realm_access: { roles: ["city_operator", "tenant_admin"] } })))
-      .rejects.toMatchObject({ statusCode: 401 });
   });
 
-  it("rejects missing tenant scope and malformed jurisdiction assignments", async () => {
+  it("rejects missing or malformed subject and tenant identity claims", async () => {
+    await expect(verifyAccessToken(token({ sub: undefined }))).rejects.toMatchObject({ statusCode: 401 });
     await expect(verifyAccessToken(token({ tenant_id: undefined }))).rejects.toMatchObject({ statusCode: 401 });
-    await expect(verifyAccessToken(token({ jurisdiction_ids: "district-1" }))).rejects.toMatchObject({ statusCode: 401 });
+    await expect(verifyAccessToken(token({ tenant_id: "x".repeat(129) }))).rejects.toMatchObject({ statusCode: 401 });
   });
 });
