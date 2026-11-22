@@ -41,7 +41,7 @@ Platform administrators must also have an explicit active membership record with
 
 ## Keycloak local integration
 
-See [Keycloak local development](./keycloak-local-development.md) for the local realm and browser client setup. Configure the Keycloak API audience mapper so access tokens include `civicnexus-api` in `aud`. Configure a signed `tenant_id` claim only as a tenant-selection hint; it is not proof of membership. Do not rely on a browser client to assign authorization claims.
+See [Keycloak local development](./keycloak-local-development.md) for the local realm and browser client setup. Configure the Keycloak API audience mapper so access tokens include `civicnexus-api` in `aud`. The imported Keycloak realm maps the administrator-managed user attribute `tenant_id` into the access token as a signed tenant-selection hint. Set that attribute on each Keycloak user from the trusted Keycloak administration console; do not expose it as a self-service account field. The claim is not proof of membership: the API still requires a matching active MongoDB record. Do not rely on a browser client to assign authorization claims.
 
 ## Authorization
 

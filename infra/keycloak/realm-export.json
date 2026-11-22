@@ -56,6 +56,32 @@
           }
         }
       ]
+    },
+    {
+      "name": "civicnexus-tenant-context",
+      "description": "Expose the administrator-managed tenant selection context in access tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "CivicNexus tenant context",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false",
+            "multivalued": "false"
+          }
+        }
+      ]
     }
   ],
   "clients": [
@@ -82,7 +108,8 @@
         "profile",
         "roles",
         "email",
-        "civicnexus-api-audience"
+        "civicnexus-api-audience",
+        "civicnexus-tenant-context"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
