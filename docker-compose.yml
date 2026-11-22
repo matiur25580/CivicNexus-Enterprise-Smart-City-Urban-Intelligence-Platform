@@ -1,0 +1,20 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: civicnexus-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: civicnexus
+    ports:
+      - "27017:27017"
+    volumes:
+      - civicnexus-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  civicnexus-mongo-data:
