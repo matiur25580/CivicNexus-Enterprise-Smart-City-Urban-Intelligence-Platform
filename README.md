@@ -35,3 +35,11 @@ See [docs/architecture/overview.md](docs/architecture/overview.md) and the works
 ## Engineering principles
 
 Security by default, validated configuration, typed boundaries, observable services, reproducible local development, automated quality gates, and incremental delivery.
+
+
+## Security and contribution guidance
+
+- [Security policy](SECURITY.md) — responsible vulnerability reporting and project security expectations.
+- [Contributing guide](CONTRIBUTING.md) — engineering standards and pull request expectations.
+
+These documents describe intended safeguards and contribution practices; they do not imply that planned product controls are already implemented or independently verified.
