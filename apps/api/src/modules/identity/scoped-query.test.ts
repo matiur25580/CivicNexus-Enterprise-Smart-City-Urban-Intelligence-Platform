@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { AuthenticatedPrincipal } from "@civicnexus/contracts";
 import { HttpError } from "../../lib/http-error.js";
 import { buildJurisdictionScopedFilter, buildTenantScopedFilter } from "./scoped-query.js";
+import { canAccessJurisdiction, canAccessTenant, hasPermission, requireAuthenticated, requireJurisdictionAccess, requirePermission, requireTenantAccess } from "./authorization.js";
+import type { Request, Response, NextFunction } from "express";
+import { vi } from "vitest";
 
 const operator: AuthenticatedPrincipal = {
   userId: "user-1",
@@ -96,5 +99,84 @@ describe("MongoDB tenant and jurisdiction query scoping", () => {
       expect(error).toBeInstanceOf(HttpError);
       expect((error as HttpError).code).toBe("TENANT_SCOPE_REQUIRED");
     }
+  });
+});
+
+
+describe("authorization policy and route middleware", () => {
+  function invoke(
+    middleware: (request: Request, response: Response, next: NextFunction) => unknown,
+    auth?: AuthenticatedPrincipal,
+    params: Record<string, string | string[]> = {},
+  ) {
+    const next = vi.fn();
+    middleware({ auth, params } as unknown as Request, {} as Response, next);
+    return next;
+  }
+
+  it("keeps incident write permission away from analysts and citizens", () => {
+    expect(hasPermission("city_operator", "incidents:write")).toBe(true);
+    expect(hasPermission("analyst", "incidents:write")).toBe(false);
+    expect(hasPermission("citizen", "incidents:write")).toBe(false);
+    expect(hasPermission("citizen", "citizen_requests:create")).toBe(true);
+  });
+
+  it("enforces tenant and jurisdiction boundaries in policy helpers", () => {
+    expect(canAccessTenant(operator, "tenant-north")).toBe(true);
+    expect(canAccessTenant(operator, "tenant-south")).toBe(false);
+    expect(canAccessJurisdiction(operator, "district-1", "tenant-north")).toBe(true);
+    expect(canAccessJurisdiction(operator, "district-1", "tenant-south")).toBe(false);
+    expect(canAccessJurisdiction(operator, "district-9", "tenant-north")).toBe(false);
+    expect(canAccessJurisdiction(platformAdmin, "district-9", "tenant-south")).toBe(true);
+  });
+
+  it("rejects unauthenticated requests", () => {
+    expect(invoke(requireAuthenticated)).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 401, code: "AUTHENTICATION_REQUIRED",
+    }));
+  });
+
+  it("rejects authenticated principals without the required permission", () => {
+    expect(invoke(requirePermission("incidents:write"), { ...operator, role: "analyst" }))
+      .toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403, code: "PERMISSION_DENIED" }));
+  });
+
+  it("allows a principal with the required permission", () => {
+    expect(invoke(requirePermission("incidents:write"), operator)).toHaveBeenCalledWith();
+  });
+
+  it("fails closed for missing or multi-valued tenant route parameters", () => {
+    expect(invoke(requireTenantAccess, operator)).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 400, code: "TENANT_SCOPE_REQUIRED",
+    }));
+    expect(invoke(requireTenantAccess, operator, {
+      tenantId: ["tenant-north", "tenant-south"],
+    })).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 400, code: "TENANT_SCOPE_REQUIRED",
+    }));
+  });
+
+  it("rejects cross-tenant routes and allows the authenticated tenant", () => {
+    expect(invoke(requireTenantAccess, operator, { tenantId: "tenant-south" }))
+      .toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403, code: "TENANT_ACCESS_DENIED" }));
+    expect(invoke(requireTenantAccess, operator, { tenantId: "tenant-north" })).toHaveBeenCalledWith();
+  });
+
+  it("rejects unassigned jurisdictions and tenant-mismatched jurisdiction routes", () => {
+    expect(invoke(requireJurisdictionAccess, operator, { jurisdictionId: "district-9" }))
+      .toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403, code: "JURISDICTION_ACCESS_DENIED" }));
+    expect(invoke(requireJurisdictionAccess, operator, {
+      tenantId: "tenant-south", jurisdictionId: "district-1",
+    })).toHaveBeenCalledWith(expect.objectContaining({
+      statusCode: 403, code: "JURISDICTION_ACCESS_DENIED",
+    }));
+  });
+
+  it("allows assigned jurisdictions and explicit platform-admin scope", () => {
+    expect(invoke(requireJurisdictionAccess, operator, { jurisdictionId: "district-2" }))
+      .toHaveBeenCalledWith();
+    expect(invoke(requireJurisdictionAccess, platformAdmin, {
+      tenantId: "tenant-south", jurisdictionId: "district-9",
+    })).toHaveBeenCalledWith();
   });
 });
