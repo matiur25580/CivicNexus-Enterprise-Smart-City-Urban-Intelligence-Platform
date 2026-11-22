@@ -1,0 +1,61 @@
+{
+  "realm": "civicnexus",
+  "enabled": true,
+  "displayName": "CivicNexus Development",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "platform_admin",
+        "description": "Platform-wide administration"
+      },
+      {
+        "name": "tenant_admin",
+        "description": "Tenant administration"
+      },
+      {
+        "name": "city_operator",
+        "description": "City operations"
+      },
+      {
+        "name": "analyst",
+        "description": "Read-only analytics"
+      },
+      {
+        "name": "emergency_responder",
+        "description": "Emergency response operations"
+      },
+      {
+        "name": "citizen",
+        "description": "Citizen self-service"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "civicnexus-web",
+      "name": "CivicNexus Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    }
+  ]
+}
