@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createServer, type Server } from "node:http";
 import { generateKeyPairSync, sign } from "node:crypto";
 import type { AddressInfo } from "node:net";
@@ -41,6 +41,7 @@ describe("OIDC access-token verification", () => {
     process.env.OIDC_ISSUER = issuer;
     process.env.OIDC_JWKS_URI = `http://127.0.0.1:${address.port}/jwks`;
     process.env.OIDC_AUDIENCE = "civicnexus-api";
+    vi.resetModules();
     const verifier = await import("./oidc.js");
     verifyAccessToken = verifier.verifyAccessToken;
     clearOidcJwksCache = verifier.clearOidcJwksCache;
