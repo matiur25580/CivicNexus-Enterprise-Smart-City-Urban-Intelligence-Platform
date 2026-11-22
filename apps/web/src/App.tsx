@@ -1,4 +1,5 @@
-import { Activity, ArrowUpRight, Building2, CloudSun, Gauge, MapPinned, ShieldCheck, Waves } from "lucide-react";
+import { Activity, ArrowUpRight, Building2, CloudSun, Gauge, LogIn, LogOut, MapPinned, ShieldCheck, Waves } from "lucide-react";
+import { useAuth } from "./auth/AuthProvider";
 
 const modules = [
   { icon: MapPinned, title: "City digital twin", description: "A spatial operating picture for critical assets and service zones.", status: "Foundation" },
@@ -8,16 +9,33 @@ const modules = [
 ];
 
 export default function App() {
+  const auth = useAuth();
   const healthUrl = `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api/v1"}/health`;
+  const displayName = auth.profile?.name ?? auth.profile?.preferred_username ?? "Authenticated user";
+  const roles = (auth.profile?.realm_access as { roles?: string[] } | undefined)?.roles?.filter((role) =>
+    ["platform_admin", "tenant_admin", "city_operator", "analyst", "emergency_responder", "citizen"].includes(role),
+  ) ?? [];
+
   return <main className="shell">
     <nav className="topbar" aria-label="Main navigation">
       <a className="brand" href="/" aria-label="CivicNexus home"><span className="brand-mark"><Building2 size={20} /></span><span>Civic<span className="brand-accent">Nexus</span></span></a>
       <div className="topbar-meta"><span className="live-dot" /> PLATFORM FOUNDATION <span className="version">v0.1</span></div>
     </nav>
+    {auth.ready && auth.authenticated && <section className="session-bar" aria-label="Authenticated session">
+      <div><span className="session-indicator" /> Signed in as <strong>{displayName}</strong>{roles.length > 0 && <span className="session-role">{roles.join(", ")}</span>}</div>
+      <button className="auth-button secondary" onClick={() => void auth.signOut()}><LogOut size={15} /> Sign out</button>
+    </section>}
     <section className="hero">
       <div className="hero-copy"><p className="eyebrow">URBAN INTELLIGENCE PLATFORM</p><h1>Make every city<br /><span>more resilient.</span></h1>
         <p className="hero-description">A unified operational foundation for understanding infrastructure, coordinating services, and shaping better urban outcomes.</p>
-        <div className="hero-actions"><a className="primary-link" href="#capabilities">Explore capabilities <ArrowUpRight size={16} /></a><span className="build-label"><span className="live-dot" /> FOUNDATION BUILD</span></div>
+        <div className="hero-actions">
+          {auth.ready && !auth.authenticated && <button className="auth-button primary" onClick={() => void auth.signIn()} disabled={!auth.configured}><LogIn size={16} /> Sign in with CivicNexus</button>}
+          {auth.authenticated && <a className="primary-link" href="#capabilities">Explore capabilities <ArrowUpRight size={16} /></a>}
+          <span className="build-label"><span className="live-dot" /> {auth.authenticated ? "SECURE SESSION" : "IDENTITY READY"}</span>
+        </div>
+        {!auth.configured && <p className="auth-hint">Sign-in is not enabled yet. Configure the VITE_OIDC_* settings and start the local Keycloak service.</p>}
+        {auth.error && <p className="auth-error" role="alert">{auth.error}</p>}
+        {!auth.ready && <p className="auth-hint" role="status">Checking your identity session…</p>}
       </div>
       <div className="city-card" aria-label="Illustrative city infrastructure overview">
         <div className="city-card-header"><span>METRO AREA / OVERVIEW</span><span className="map-status">SYSTEM MODEL</span></div>

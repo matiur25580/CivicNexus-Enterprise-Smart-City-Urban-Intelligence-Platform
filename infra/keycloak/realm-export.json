@@ -34,6 +34,30 @@
       }
     ]
   },
+  "clientScopes": [
+    {
+      "name": "civicnexus-api-audience",
+      "description": "Add CivicNexus API to access-token audience",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "CivicNexus API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "civicnexus-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
   "clients": [
     {
       "clientId": "civicnexus-web",
@@ -51,6 +75,14 @@
       ],
       "webOrigins": [
         "http://localhost:5173"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email",
+        "civicnexus-api-audience"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
