@@ -46,7 +46,7 @@ async function startServer(principal?: AuthenticatedPrincipal) {
   const app = express();
   app.use(express.json());
   app.use((request, _response, next) => {
-    request.auth = principal;
+    if (principal) request.auth = principal;
     next();
   });
   app.use("/api/v1/assets", createAssetRouter(new AssetRepository(makePersistence())));

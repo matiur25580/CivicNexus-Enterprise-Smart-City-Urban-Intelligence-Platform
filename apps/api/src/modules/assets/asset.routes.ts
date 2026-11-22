@@ -7,6 +7,13 @@ import {
 } from "../identity/authorization.js";
 import { AssetRepository } from "./asset.repository.js";
 
+function assetId(value: unknown): string {
+  if (typeof value !== "string" || value.length === 0 || value.length > 128) {
+    throw new HttpError(400, "INVALID_ASSET_ID", "A valid asset identifier is required.");
+  }
+  return value;
+}
+
 function requestedTenantId(value: unknown): string | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "string" || value.trim().length === 0 || value.length > 128) {
@@ -41,7 +48,7 @@ export function createAssetRouter(repository: AssetRepository = new AssetReposit
 
   router.get("/:id", requirePermission("assets:read"), asyncRoute(async (request, response) => {
     const tenantId = requestedTenantId(request.query.tenantId);
-    const asset = await repository.getById(request.auth!, request.params.id!, tenantId);
+    const asset = await repository.getById(request.auth!, assetId(request.params.id), tenantId);
     if (!asset) throw new HttpError(404, "ASSET_NOT_FOUND", "The requested asset was not found.");
     response.status(200).json({ data: asset });
   }));
