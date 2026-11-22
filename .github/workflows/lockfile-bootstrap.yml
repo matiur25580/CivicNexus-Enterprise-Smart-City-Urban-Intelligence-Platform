@@ -1,0 +1,30 @@
+name: Generate npm workspace lockfile
+on:
+  push:
+    branches: ["feat/milestone-1-enterprise-foundation"]
+    paths:
+      - "package.json"
+      - "apps/**/package.json"
+      - "packages/**/package.json"
+      - ".github/workflows/lockfile-bootstrap.yml"
+permissions:
+  contents: read
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Generate workspace lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+      - name: Validate lockfile metadata
+        run: node -e "const p=require('./package-lock.json'); if(p.lockfileVersion!==3 || !p.packages['']?.workspaces) process.exit(1); console.log('npm workspace lockfile generated:', p.lockfileVersion)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: civicnexus-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 3
