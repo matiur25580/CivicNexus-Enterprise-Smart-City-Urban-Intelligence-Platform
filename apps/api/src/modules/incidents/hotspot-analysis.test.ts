@@ -39,4 +39,32 @@ describe("analyzeIncidentHotspots", () => {
     expect(result[0]!.riskScore).toBeGreaterThan(0);
     expect(result[0]!.safetyRiskCount).toBe(1);
   });
+
+  it("keeps GeoJSON centers within WGS84 bounds at the poles and date line", () => {
+    const results = analyzeIncidentHotspots([
+      incident(180, 90, "high"),
+      incident(-180, -90, "critical")
+    ], 500, 10);
+    for (const result of results) {
+      const [longitude, latitude] = result.center.coordinates;
+      expect(longitude).toBeGreaterThanOrEqual(-180);
+      expect(longitude).toBeLessThanOrEqual(180);
+      expect(latitude).toBeGreaterThanOrEqual(-90);
+      expect(latitude).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it("rejects invalid grid sizes and result limits", () => {
+    expect(() => analyzeIncidentHotspots([], 0, 10)).toThrow(RangeError);
+    expect(() => analyzeIncidentHotspots([], 500, 0)).toThrow(RangeError);
+    expect(() => analyzeIncidentHotspots([], 500, 51)).toThrow(RangeError);
+  });
+
+  it("uses a stable lexical tie-break for equally frequent categories", () => {
+    const results = analyzeIncidentHotspots([
+      { ...incident(88.36, 22.57), category: "water" },
+      { ...incident(88.3601, 22.5701), category: "road_damage" }
+    ], 500, 10);
+    expect(results[0]!.dominantCategory).toBe("road_damage");
+  });
 });
