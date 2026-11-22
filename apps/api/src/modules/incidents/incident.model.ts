@@ -6,7 +6,8 @@ export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "reported" | "triaged" | "assigned" | "in_progress" | "resolved" | "closed";
 export interface IncidentRecord {
   tenantId: string; jurisdictionId: string; title: string; description: string;
-  category: "road_damage" | "water" | "power" | "waste" | "public_safety" | "transport" | "other";
+  location: GeoJsonPoint; status: IncidentStatus; assignedTeam?: string | undefined;
+  createdAt: Date; updatedAt: Date;
   severity: IncidentSeverity; impactCount: number; safetyRisk: boolean;
   location: GeoJsonPoint; status: IncidentStatus; assignedTeam?: string;
   reportedBy: string; updatedBy: string;
