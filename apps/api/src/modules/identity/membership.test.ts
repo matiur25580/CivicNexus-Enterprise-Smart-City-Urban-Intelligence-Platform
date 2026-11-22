@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CivicRole } from "@civicnexus/contracts";
-import { HttpError } from "../../lib/http-error.js";
 import { resolveMembership } from "./membership.js";
 import type { MembershipRepository } from "./membership.js";
 
