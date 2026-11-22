@@ -88,7 +88,7 @@ router.patch("/:incidentId", requirePermission("incidents:write"), asyncRoute(as
   await incident.save();
   response.status(200).json({ data: incident, meta: { priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
 }));
-router.get("/hotspots", requirePermission("analytics:read"), asyncRoute(async (request, response) => {
+router.get("/hotspots", requirePermission("incidents:read"), asyncRoute(async (request, response) => {
   const querySchema = z.object({
     tenantId: z.string().trim().min(1).max(128).optional(),
     jurisdictionId: z.string().trim().min(1).max(128).optional(),
