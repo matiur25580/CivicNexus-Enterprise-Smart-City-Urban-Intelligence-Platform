@@ -11,6 +11,7 @@ import { authenticateOidc } from "./modules/identity/oidc.js";
 import { healthRouter } from "./routes/health.routes.js";
 import { identityRouter } from "./routes/identity.routes.js";
 import { createAssetRouter } from "./modules/assets/asset.routes.js";
+import { createIncidentRouter } from "./modules/incidents/incident.routes.js";
 
 export const app = express();
 
@@ -62,6 +63,7 @@ app.get("/api/v1", (_request, response) => {
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/identity", identityRouter);
 app.use("/api/v1/assets", createAssetRouter());
+app.use("/api/v1/incidents", createIncidentRouter());
 app.use((_request, _response, next) => {
   next(new HttpError(404, "NOT_FOUND", "The requested resource was not found."));
 });
