@@ -36,7 +36,7 @@ React 18 · TypeScript · Vite · Node.js · Express 5 · MongoDB · Mongoose ·
 Prerequisites: Node.js 22+, npm 10+, Docker and MongoDB.
 
 ```bash
-npm install
+npm ci
 # Copy the app .env.example files and configure local MongoDB / OIDC settings.
 npm run dev
 ```
@@ -62,73 +62,73 @@ The 12 views below are **illustrative SVG dashboard concepts**, not screenshots 
 
 ### 01. Urban operations center
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative city command center combining district KPIs, active service alerts and a map-based operational overview. All sample values are synthetic.
 
 ![CivicNexus Urban operations center](docs/assets/dashboard/01-urban-operations-center.svg)
 
 ### 02. Geospatial asset registry
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative geospatial asset register showing infrastructure locations, asset classes, condition and criticality for maintenance planning. All sample values are synthetic.
 
 ![CivicNexus Geospatial asset registry](docs/assets/dashboard/02-geospatial-asset-registry.svg)
 
 ### 03. Incident response desk
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative incident response desk for triage, severity review, ownership assignment and status tracking across city teams. All sample values are synthetic.
 
 ![CivicNexus Incident response desk](docs/assets/dashboard/03-incident-response-desk.svg)
 
 ### 04. Incident hotspot intelligence
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative hotspot analysis view showing incident clusters, spatial density and explainable risk scores over a configurable time window. All sample values are synthetic.
 
 ![CivicNexus Incident hotspot intelligence](docs/assets/dashboard/04-incident-hotspot-intelligence.svg)
 
 ### 05. District performance
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative district performance view comparing service levels, response times, open incidents and operational trends. All sample values are synthetic.
 
 ![CivicNexus District performance](docs/assets/dashboard/05-district-performance.svg)
 
 ### 06. IoT telemetry operations
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative IoT operations view showing device connectivity, telemetry freshness, threshold alerts and sensor health. All sample values are synthetic.
 
 ![CivicNexus IoT telemetry operations](docs/assets/dashboard/06-iot-telemetry-operations.svg)
 
 ### 07. Predictive maintenance
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative predictive maintenance view prioritizing assets by condition signals, risk indicators and recommended inspection windows. All sample values are synthetic.
 
 ![CivicNexus Predictive maintenance](docs/assets/dashboard/07-predictive-maintenance.svg)
 
 ### 08. Citizen service requests
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative citizen service request workspace showing intake categories, queue state, ownership and resolution progress. All sample values are synthetic.
 
 ![CivicNexus Citizen service requests](docs/assets/dashboard/08-citizen-service-requests.svg)
 
 ### 09. Emergency resource coordination
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative emergency resource coordination view showing team availability, incident assignments and response coverage. All sample values are synthetic.
 
 ![CivicNexus Emergency resource coordination](docs/assets/dashboard/09-emergency-resource-coordination.svg)
 
 ### 10. Environmental monitoring
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative environmental monitoring view summarizing air quality, water observations, noise levels and threshold exceptions. All sample values are synthetic.
 
 ![CivicNexus Environmental monitoring](docs/assets/dashboard/10-environmental-monitoring.svg)
 
 ### 11. Mobility & traffic intelligence
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative mobility intelligence view highlighting traffic flow, congestion hotspots and corridor-level movement trends. All sample values are synthetic.
 
 ![CivicNexus Mobility & traffic intelligence](docs/assets/dashboard/11-mobility-traffic-intelligence.svg)
 
 ### 12. Governance & audit
 
-Illustrative operator view for geospatial city operations, service coordination and infrastructure intelligence. All sample values are synthetic.
+Illustrative governance and audit view showing attributable administrative actions, access events and policy review signals. All sample values are synthetic.
 
 ![CivicNexus Governance & audit](docs/assets/dashboard/12-governance-audit.svg)
 
@@ -147,3 +147,11 @@ CI, CodeQL, secret scanning and dependency auditing are maintained in GitHub Act
 ## Responsible claims
 
 CivicNexus is an actively developed portfolio project, not a certified public-safety or emergency-dispatch system. Spatial analytics and risk indicators are decision-support signals, not guarantees. Production deployment requires city-specific security, legal, accessibility and operational review.
+
+
+## Security and contribution guidance
+
+- [Security policy](SECURITY.md) — responsible vulnerability reporting and project security expectations.
+- [Contributing guide](CONTRIBUTING.md) — engineering standards and pull request expectations.
+
+These documents describe intended safeguards and contribution practices; they do not imply that planned product controls are already implemented or independently verified.
