@@ -5,12 +5,21 @@ import type { GeoJsonPoint } from "@civicnexus/contracts";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus = "reported" | "triaged" | "assigned" | "in_progress" | "resolved" | "closed";
 export interface IncidentRecord {
-  tenantId: string; jurisdictionId: string; title: string; description: string;
-  location: GeoJsonPoint; status: IncidentStatus; assignedTeam?: string | undefined;
-  createdAt: Date; updatedAt: Date;
-  severity: IncidentSeverity; impactCount: number; safetyRisk: boolean;
-  location: GeoJsonPoint; status: IncidentStatus; assignedTeam?: string;
-  reportedBy: string; updatedBy: string;
+  tenantId: string;
+  jurisdictionId: string;
+  title: string;
+  description: string;
+  category: "road_damage" | "water" | "power" | "waste" | "public_safety" | "transport" | "other";
+  severity: IncidentSeverity;
+  impactCount: number;
+  safetyRisk: boolean;
+  location: GeoJsonPoint;
+  status: IncidentStatus;
+  assignedTeam?: string | undefined;
+  reportedBy: string;
+  updatedBy: string;
+  createdAt: Date;
+  updatedAt: Date;
   history: Array<{ status: IncidentStatus; note: string; changedBy: string; changedAt: Date }>;
 }
 const pointSchema = new Schema({
