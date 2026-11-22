@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createServer, type Server } from "node:http";
 import { generateKeyPairSync, sign } from "node:crypto";
 import type { AddressInfo } from "node:net";
-import { clearOidcJwksCache, verifyAccessToken } from "./oidc.js";
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const jwk = publicKey.export({ format: "jwk" });
@@ -13,11 +12,12 @@ const originalEnv = {
   audience: process.env.OIDC_AUDIENCE,
 };
 let server: Server;
-let jwksUrl: string;
 let issuer: string;
+let verifyAccessToken: typeof import("./oidc.js").verifyAccessToken;
+let clearOidcJwksCache: typeof import("./oidc.js").clearOidcJwksCache;
 
-function token(overrides: Record<string, unknown> = {}): string {
-  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid: keyId })).toString("base64url");
+function token(overrides: Record<string, unknown> = {}, kid = keyId): string {
+  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT", kid })).toString("base64url");
   const claims = Buffer.from(JSON.stringify({
     iss: issuer, aud: "civicnexus-api", sub: "operator-1",
     exp: Math.floor(Date.now() / 1000) + 300,
@@ -37,11 +37,13 @@ describe("OIDC access-token verification", () => {
     });
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address() as AddressInfo;
-    jwksUrl = `http://127.0.0.1:${address.port}/jwks`;
     issuer = "https://identity.example.test/realms/civicnexus";
     process.env.OIDC_ISSUER = issuer;
-    process.env.OIDC_JWKS_URI = jwksUrl;
+    process.env.OIDC_JWKS_URI = `http://127.0.0.1:${address.port}/jwks`;
     process.env.OIDC_AUDIENCE = "civicnexus-api";
+    const verifier = await import("./oidc.js");
+    verifyAccessToken = verifier.verifyAccessToken;
+    clearOidcJwksCache = verifier.clearOidcJwksCache;
   });
 
   afterAll(async () => {
@@ -76,16 +78,17 @@ describe("OIDC access-token verification", () => {
     await expect(verifyAccessToken(token({ nbf: Math.floor(Date.now() / 1000) + 120 }))).rejects.toMatchObject({ statusCode: 401 });
   });
 
-  it("rejects malformed tokens, unsupported algorithms, and ambiguous roles", async () => {
+  it("rejects malformed tokens, unsupported algorithms, unknown keys, and ambiguous roles", async () => {
     await expect(verifyAccessToken("not.a.jwt")).rejects.toMatchObject({ statusCode: 401 });
     const parts = token().split(".");
     parts[0] = Buffer.from(JSON.stringify({ alg: "HS256", kid: keyId })).toString("base64url");
     await expect(verifyAccessToken(parts.join("."))).rejects.toMatchObject({ statusCode: 401 });
+    await expect(verifyAccessToken(token({}, "unknown-key"))).rejects.toMatchObject({ statusCode: 401 });
     await expect(verifyAccessToken(token({ realm_access: { roles: ["city_operator", "tenant_admin"] } })))
       .rejects.toMatchObject({ statusCode: 401 });
   });
 
-  it("rejects caller claims that omit tenant scope or contain invalid jurisdictions", async () => {
+  it("rejects missing tenant scope and malformed jurisdiction assignments", async () => {
     await expect(verifyAccessToken(token({ tenant_id: undefined }))).rejects.toMatchObject({ statusCode: 401 });
     await expect(verifyAccessToken(token({ jurisdiction_ids: "district-1" }))).rejects.toMatchObject({ statusCode: 401 });
   });
