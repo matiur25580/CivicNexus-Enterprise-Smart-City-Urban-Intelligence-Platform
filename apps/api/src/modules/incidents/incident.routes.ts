@@ -74,12 +74,15 @@ router.patch("/:incidentId", requirePermission("incidents:write"), asyncRoute(as
   if (incident.status === "closed" && parsed.data.status && parsed.data.status !== "closed") {
     throw new HttpError(409, "INCIDENT_CLOSED", "Closed incidents cannot be reopened through this endpoint.");
   }
-  if (parsed.data.status && parsed.data.status !== incident.status) {
-    incident.status = parsed.data.status;
-    incident.history.push({ status: parsed.data.status, note: parsed.data.note ?? "", changedBy: request.auth!.userId, changedAt: new Date() });
-  }
+  const statusChanged = parsed.data.status !== undefined && parsed.data.status !== incident.status;
+  if (statusChanged) incident.status = parsed.data.status!;
   if (parsed.data.assignedTeam === null) incident.set("assignedTeam", undefined);
   else if (parsed.data.assignedTeam !== undefined) incident.assignedTeam = parsed.data.assignedTeam;
+  // Keep the operational timeline complete for notes and assignment-only updates too.
+  if (statusChanged || parsed.data.note !== undefined || parsed.data.assignedTeam !== undefined) {
+    const note = parsed.data.note ?? (parsed.data.assignedTeam !== undefined ? "Response team assignment updated" : "");
+    incident.history.push({ status: incident.status, note, changedBy: request.auth!.userId, changedAt: new Date() });
+  }
   incident.updatedBy = request.auth!.userId;
   await incident.save();
   response.status(200).json({ data: incident, meta: { priorityScore: priorityScore(incident.severity, incident.impactCount, incident.safetyRisk, incident.createdAt) } });
