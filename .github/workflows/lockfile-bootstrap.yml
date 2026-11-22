@@ -1,4 +1,4 @@
-name: Generate npm workspace lockfile
+name: Generate and validate npm workspace lockfile
 on:
   push:
     branches: ["feat/milestone-1-enterprise-foundation"]
@@ -8,12 +8,14 @@ on:
       - "packages/**/package.json"
       - ".github/workflows/lockfile-bootstrap.yml"
 permissions:
-  contents: read
+  contents: write
 jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/milestone-1-enterprise-foundation
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -21,9 +23,28 @@ jobs:
         run: npm install --package-lock-only --ignore-scripts --no-audit
       - name: Validate lockfile metadata
         run: node -e "const p=require('./package-lock.json'); if(p.lockfileVersion!==3 || !p.packages['']?.workspaces) process.exit(1); console.log('npm workspace lockfile generated:', p.lockfileVersion)"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: civicnexus-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 3
+      - name: Switch CI to deterministic installation
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const fs = require("node:fs");
+          const path = ".github/workflows/ci.yml";
+          const source = fs.readFileSync(path, "utf8");
+          if (!source.includes("run: npm install")) throw new Error("Expected npm install step was not found");
+          fs.writeFileSync(path, source.replace("run: npm install", "run: npm ci"));
+          NODE
+      - name: Verify clean install and quality gates
+        run: |
+          npm ci
+          npm audit
+          npm run typecheck
+          npm run lint
+          npm test
+          npm run build
+      - name: Commit generated lockfile and CI update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/lockfile-bootstrap.yml
+          git add package-lock.json .github/workflows/ci.yml .github/workflows/lockfile-bootstrap.yml
+          git commit -m "chore: commit npm workspace lockfile and use npm ci"
+          git push origin HEAD:feat/milestone-1-enterprise-foundation
