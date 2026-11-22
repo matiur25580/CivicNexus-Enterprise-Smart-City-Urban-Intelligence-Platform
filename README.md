@@ -135,7 +135,7 @@ Illustrative operator view for geospatial city operations, service coordination 
 
 ## Engineering delivery
 
-CI, CodeQL, secret scanning and dependency auditing are maintained in GitHub Actions. Review current workflow results before release. Expand end-to-end tests, accessibility checks, tenant-boundary tests, reproducible lockfiles, immutable action pinning, observability and backup/restore exercises before production.
+CI, CodeQL, secret scanning and dependency auditing are maintained in GitHub Actions. The latest feature-branch dependency audit against the committed lockfile reports zero known vulnerabilities. Continue monitoring new advisories; remaining priorities include end-to-end tests, accessibility checks, tenant-boundary tests, immutable action pinning, observability and backup/restore exercises.
 
 ## Documentation
 
