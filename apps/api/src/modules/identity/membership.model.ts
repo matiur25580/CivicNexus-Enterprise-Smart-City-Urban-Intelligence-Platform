@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import type { Model } from "mongoose";
 import type { CivicRole } from "@civicnexus/contracts";
 
 export type MembershipStatus = "active" | "suspended" | "revoked";
@@ -37,5 +38,6 @@ const identityMembershipSchema = new Schema<IdentityMembershipRecord>({
 identityMembershipSchema.index({ userId: 1, tenantId: 1 }, { unique: true, name: "uniq_user_tenant_membership" });
 identityMembershipSchema.index({ tenantId: 1, status: 1, role: 1 }, { name: "tenant_membership_directory" });
 
-export const IdentityMembership = mongoose.models.IdentityMembership ??
+export const IdentityMembership: Model<IdentityMembershipRecord> =
+  (mongoose.models.IdentityMembership as Model<IdentityMembershipRecord> | undefined) ??
   mongoose.model<IdentityMembershipRecord>("IdentityMembership", identityMembershipSchema);
