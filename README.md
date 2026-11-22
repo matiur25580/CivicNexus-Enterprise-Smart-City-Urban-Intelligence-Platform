@@ -135,7 +135,7 @@ Illustrative governance and audit view showing attributable administrative actio
 
 ## Engineering delivery
 
-CI, CodeQL, secret scanning and dependency auditing are maintained in GitHub Actions. The latest feature-branch dependency audit against the committed lockfile reports zero known vulnerabilities. Continue monitoring new advisories; remaining priorities include end-to-end tests, accessibility checks, tenant-boundary tests, immutable action pinning, observability and backup/restore exercises.
+CI, CodeQL, secret scanning and dependency auditing are maintained in GitHub Actions. Treat workflow outcomes as branch- and commit-specific evidence: review the latest successful run for the exact release candidate before making security or readiness claims. Continue monitoring new advisories; priorities include end-to-end tests, accessibility checks, tenant-boundary tests, immutable action pinning, observability and backup/restore exercises.
 
 ## Documentation
 
