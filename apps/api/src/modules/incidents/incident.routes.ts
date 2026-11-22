@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { z } from "zod";
 import { HttpError } from "../../lib/http-error.js";
 import { requireAuthenticated, requirePermission } from "../identity/authorization.js";
@@ -29,8 +29,8 @@ const listSchema = z.object({
 });
 const router = Router();
 router.use(requireAuthenticated);
-function asyncRoute(handler: (request: import("express").Request, response: import("express").Response) => Promise<void>) {
-  return (request: import("express").Request, response: import("express").Response, next: import("express").NextFunction) => {
+function asyncRoute(handler: (request: Request, response: Response) => Promise<void>) {
+  return (request: Request, response: Response, next: NextFunction) => {
     void handler(request, response).catch(next);
   };
 }
