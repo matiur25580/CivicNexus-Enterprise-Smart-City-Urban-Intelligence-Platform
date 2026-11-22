@@ -4,7 +4,7 @@ import { HttpError } from "../../lib/http-error.js";
 
 type ScopedDocument = Record<string, unknown>;
 
-function resolveTenantId(principal: AuthenticatedPrincipal, requestedTenantId?: string): string {
+export function resolveTenantScope(principal: AuthenticatedPrincipal, requestedTenantId?: string): string {
   const tenantId = requestedTenantId ?? principal.tenantId;
   if (!tenantId || tenantId.trim().length === 0) {
     throw new HttpError(400, "TENANT_SCOPE_REQUIRED", "A tenant scope is required for this database operation.");
@@ -18,31 +18,35 @@ function resolveTenantId(principal: AuthenticatedPrincipal, requestedTenantId?: 
   return tenantId;
 }
 
-/**
- * Adds a mandatory tenant predicate without allowing caller filters to overwrite it.
- * Use the returned filter for find, count, update, and delete operations.
- */
+export function assertJurisdictionAssignment(
+  principal: AuthenticatedPrincipal,
+  jurisdictionId: string,
+  requestedTenantId?: string,
+): string {
+  const tenantId = resolveTenantScope(principal, requestedTenantId);
+  if (principal.role !== "platform_admin" && !principal.jurisdictionIds.includes(jurisdictionId)) {
+    throw new HttpError(403, "JURISDICTION_ACCESS_DENIED", "The requested jurisdiction is outside your access scope.");
+  }
+  return tenantId;
+}
+
+/** Adds a mandatory tenant predicate; caller filters cannot overwrite the security boundary. */
 export function buildTenantScopedFilter<T extends ScopedDocument>(
   principal: AuthenticatedPrincipal,
   filter: FilterQuery<T> = {},
   requestedTenantId?: string,
 ): FilterQuery<T> {
-  const tenantId = resolveTenantId(principal, requestedTenantId);
-  return {
-    $and: [filter, { tenantId } as FilterQuery<T>],
-  } as FilterQuery<T>;
+  const tenantId = resolveTenantScope(principal, requestedTenantId);
+  return { $and: [filter, { tenantId } as FilterQuery<T>] } as FilterQuery<T>;
 }
 
-/**
- * Adds both tenant and assigned-jurisdiction predicates. An empty jurisdiction
- * assignment fails closed; platform administrators must still select a tenant.
- */
+/** Adds tenant and jurisdiction predicates. Empty assignments fail closed. */
 export function buildJurisdictionScopedFilter<T extends ScopedDocument>(
   principal: AuthenticatedPrincipal,
   filter: FilterQuery<T> = {},
   requestedTenantId?: string,
 ): FilterQuery<T> {
-  const tenantId = resolveTenantId(principal, requestedTenantId);
+  const tenantId = resolveTenantScope(principal, requestedTenantId);
   if (principal.role === "platform_admin") {
     return { $and: [filter, { tenantId } as FilterQuery<T>] } as FilterQuery<T>;
   }
