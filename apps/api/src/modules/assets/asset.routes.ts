@@ -42,6 +42,7 @@ export function createAssetRouter(repository: AssetRepository = new AssetReposit
   router.get("/", requirePermission("assets:read"), asyncRoute(async (request, response) => {
     const tenantId = requestedTenantId(request.query.tenantId);
     const { tenantId: _tenant, ...filters } = request.query;
+    void _tenant;
     const assets = await repository.list(request.auth!, filters, tenantId);
     response.status(200).json({ data: assets, meta: { count: assets.length } });
   }));
