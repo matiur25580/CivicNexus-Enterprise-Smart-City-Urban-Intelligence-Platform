@@ -29,6 +29,7 @@ export function assertJurisdictionAssignment(
 }
 
 /** Adds a mandatory tenant predicate; caller filters cannot overwrite the security boundary. */
+// Wrap caller filters with a mandatory tenant predicate that cannot be replaced by user-supplied conditions.
 export function buildTenantScopedFilter<T>(
   principal: AuthenticatedPrincipal,
   filter: FilterQuery<T> = {},
