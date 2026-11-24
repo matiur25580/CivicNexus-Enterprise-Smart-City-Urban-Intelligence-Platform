@@ -22,6 +22,7 @@ export interface AssetPersistence {
   deleteOne(filter: FilterQuery<AssetRecord>): Promise<boolean>;
 }
 
+// Isolate MongoDB operations behind the persistence interface so asset workflows can use a consistent data boundary.
 const mongoAssetPersistence: AssetPersistence = {
   async insert(record) {
     return Asset.create(record);
