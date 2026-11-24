@@ -32,6 +32,7 @@ function decodeSegment<T>(segment: string): T {
   return JSON.parse(Buffer.from(segment, "base64url").toString("utf8")) as T;
 }
 
+// Cache the identity provider's signing keys and coalesce concurrent refreshes to avoid redundant JWKS requests.
 async function loadJwks(force = false): Promise<Jwk[]> {
   if (!env.OIDC_JWKS_URI) throw unauthorized();
   if (!force && cachedKeys.length > 0 && Date.now() < cacheExpiresAt) return cachedKeys;
