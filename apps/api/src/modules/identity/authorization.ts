@@ -27,6 +27,7 @@ const ROLE_PERMISSIONS: Record<CivicRole, readonly CivicPermission[]> = {
   citizen: ["citizen_requests:create", "citizen_requests:read_own"],
 };
 
+// Keep role-to-permission decisions centralized so route guards share one authorization policy.
 export function hasPermission(role: CivicRole, permission: CivicPermission): boolean {
   return ROLE_PERMISSIONS[role].includes(permission);
 }
