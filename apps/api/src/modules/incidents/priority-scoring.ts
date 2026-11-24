@@ -11,6 +11,7 @@ const severityPoints: Record<IncidentPrioritySeverity, number> = {
  * Produces a bounded operational priority score.
  * nowMs is injectable so aging behavior can be tested without wall-clock timing.
  */
+// Combine severity, affected population, safety exposure, and elapsed age into a bounded response-priority score.
 export function calculateIncidentPriorityScore(
   severity: IncidentPrioritySeverity,
   impactCount: number,
