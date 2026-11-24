@@ -15,6 +15,7 @@ function normalizeLongitude(longitude: number): number {
 }
 
 /** Deterministic latitude-aware grid aggregation; returns aggregate locations, never incident records. */
+// Aggregate incidents into latitude-aware geographic cells to highlight concentrations without returning raw records.
 export function analyzeIncidentHotspots(
   incidents: HotspotIncident[],
   cellSizeMeters: number,
