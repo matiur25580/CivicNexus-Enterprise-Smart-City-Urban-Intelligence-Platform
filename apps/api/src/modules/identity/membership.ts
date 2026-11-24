@@ -24,6 +24,7 @@ const mongoMembershipRepository: MembershipRepository = {
 };
 
 /** Resolves authority exclusively from an active server-managed membership record. */
+// Derive the caller's role and jurisdiction scope from an active server-side membership, never token-supplied role data.
 export async function resolveMembership(
   identity: VerifiedIdentity,
   repository: MembershipRepository = mongoMembershipRepository,
