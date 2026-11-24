@@ -4,6 +4,7 @@ export const geoJsonPositionSchema = z
   .tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)])
   .rest(z.number());
 
+// GeoJSON polygon rings must contain enough positions and close by repeating their first coordinate.
 const linearRingSchema = z
   .array(geoJsonPositionSchema)
   .min(4, "A linear ring must contain at least four positions.")
